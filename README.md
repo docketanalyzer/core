@@ -13,7 +13,7 @@ pip install '.[dev]'
 ### Test
 
 ```
-pytest
+pytest -vv
 ```
 
 ### Format

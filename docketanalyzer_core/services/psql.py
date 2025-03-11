@@ -1,9 +1,10 @@
 import csv
 from io import StringIO
+from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 import pandas as pd
 import peewee
-from peewee import Model, ModelSelect
+from peewee import Model, ModelSelect, Field
 from playhouse.migrate import migrate, PostgresqlMigrator
 from playhouse.postgres_ext import PostgresqlExtDatabase
 from playhouse.reflection import Introspector
@@ -13,7 +14,7 @@ from .. import env, notabs
 
 
 class CustomQueryMixin:
-    def pandas(self, *columns, copy=False):
+    def pandas(self, *columns: str, copy: bool = False) -> pd.DataFrame:
         if columns:
             columns = [getattr(self.model, col) for col in columns]
             query = self.select(*columns)
@@ -38,10 +39,10 @@ class CustomQueryMixin:
 
         return data
 
-    def sample(self, n):
+    def sample(self, n: int) -> 'DatabaseModelSelect':
         return self.order_by(peewee.fn.Random()).limit(n)
 
-    def delete(self):
+    def delete(self) -> int:
         model_class = self.model
         subquery = self.select(model_class._meta.primary_key)
         delete_query = model_class.delete().where(
@@ -49,7 +50,7 @@ class CustomQueryMixin:
         )
         return delete_query.execute()
 
-    def batch(self, n, verbose=True):
+    def batch(self, n: int, verbose: bool = True) -> Generator['DatabaseModelSelect', None, None]:
         model_class = self.model
         pk_field = model_class._meta.primary_key
         query = self.clone()
@@ -90,14 +91,14 @@ class DatabaseModelQueryMixin:
     """
 
     @classmethod
-    def select(cls, *fields):
+    def select(cls, *fields: Field) -> DatabaseModelSelect:
         is_default = not fields
         if not fields:
             fields = cls._meta.sorted_fields
         return DatabaseModelSelect(cls, fields, is_default=is_default)
 
     @classmethod
-    def sample(cls, n):
+    def sample(cls, n: int) -> DatabaseModelSelect:
         """Randomly sample n records from the query.
 
         Args:
@@ -109,7 +110,7 @@ class DatabaseModelQueryMixin:
         return cls.select(cls).sample(n)
     
     @classmethod
-    def pandas(cls, *columns, copy=False):
+    def pandas(cls, *columns: str, copy: bool = False) -> pd.DataFrame:
         """Convert query results directly to a pandas DataFrame.
 
         Args:
@@ -122,11 +123,11 @@ class DatabaseModelQueryMixin:
         return cls.select(cls).pandas(*columns, copy=copy)
 
     @classmethod
-    def where(cls, *args, **kwargs):
+    def where(cls, *args: Any, **kwargs: Any) -> DatabaseModelSelect:
         return cls.select(cls).where(*args, **kwargs)
 
     @classmethod
-    def batch(cls, n, verbose=False):
+    def batch(cls, n: int, verbose: bool = False) -> Generator[DatabaseModelSelect, None, None]:
         """Iterate over query results in batches of size n.
 
         Args:
@@ -139,10 +140,10 @@ class DatabaseModelQueryMixin:
         return cls.select(cls).batch(n, verbose=verbose)
     
     @classmethod
-    def count(cls):
+    def count(cls) -> int:
         return cls.select().count()
 
-    def dict(self):
+    def dict(self) -> Dict[str, Any]:
         return model_to_dict(self)
 
 
@@ -155,7 +156,7 @@ class DatabaseModel(DatabaseModelQueryMixin, Model):
     db_manager = None
 
     @classmethod
-    def drop_column(cls, column_name, confirm=True):
+    def drop_column(cls, column_name: str, confirm: bool = True) -> None:
         """Drop a column from the database table.
         
         Args:
@@ -177,7 +178,8 @@ class DatabaseModel(DatabaseModelQueryMixin, Model):
         cls.reload()
 
     @classmethod
-    def add_column(cls, column_name, column_type, null=True, overwrite=False, exists_ok=True, **kwargs):
+    def add_column(cls, column_name: str, column_type: str, null: bool = True, 
+                  overwrite: bool = False, exists_ok: bool = True, **kwargs: Any) -> None:
         """Add a new column to the database table.
         
         Args:
@@ -205,7 +207,7 @@ class DatabaseModel(DatabaseModelQueryMixin, Model):
         cls.reload()
     
     @classmethod
-    def add_data(cls, data, copy=False, batch_size=1000):
+    def add_data(cls, data: pd.DataFrame, copy: bool = False, batch_size: int = 1000) -> None:
         """Add data to the table from a pandas DataFrame.
         
         Args:
@@ -232,7 +234,7 @@ class DatabaseModel(DatabaseModelQueryMixin, Model):
                     cls.insert_many(batch).execute()
     
     @classmethod
-    def reload(cls):
+    def reload(cls) -> None:
         cls.db_manager.reload()
         new_table = cls.db_manager.load_table_class(cls._meta.table_name)
         new_attrs = dir(new_table)
@@ -246,14 +248,14 @@ class DatabaseModel(DatabaseModelQueryMixin, Model):
 
 
 class Tables:
-    def __init__(self, db):
+    def __init__(self, db: 'Database') -> None:
         self.db = db
-        self.tables = {}
+        self.tables: Dict[str, Type[DatabaseModel]] = {}
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         return name in self.db.meta
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Type[DatabaseModel]:
         if name not in self.tables:
             if name in self.db.registered_models:
                 self.tables[name] = self.db.registered_models[name]
@@ -265,10 +267,10 @@ class Tables:
                 self.tables[name] = self.db.load_table_class(name)
         return self.tables[name]
     
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Type[DatabaseModel]:
         return self[name]
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.db.meta.keys()}"
 
 
@@ -360,7 +362,7 @@ class Database:
         assert results['age'].dtype == 'int64'
         assert results['registration_date'].dtype == 'datetime64[ns]'
     """
-    def __init__(self, connection=None, registered_models=[]):
+    def __init__(self, connection: Optional[str] = None, registered_models: List[Type[DatabaseModel]] = []) -> None:
         """Initialize the database manager.
         
         Args:
@@ -368,15 +370,15 @@ class Database:
             registered_models (list): List of model classes to register with the database
         """
         self.connection = connection or env.POSTGRES_URL
-        self.db = None
+        self.db: Optional[PostgresqlExtDatabase] = None
         self.connect()
-        self.registered_models = {}
+        self.registered_models: Dict[str, Type[DatabaseModel]] = {}
         for model in registered_models:
             self.register_model(model)
         self.t = Tables(self)
-        self.cache = {}
+        self.cache: Dict[str, Any] = {}
     
-    def connect(self):
+    def connect(self) -> None:
         """Establish connection to the PostgreSQL database using the connection URL."""
         url = urlparse(self.connection)
         self.db = PostgresqlExtDatabase(
@@ -387,11 +389,11 @@ class Database:
             port=url.port
         )
 
-    def status(self):
+    def status(self) -> bool:
         return self.db.connect()
 
     @property
-    def meta(self):
+    def meta(self) -> Dict[str, Dict[str, Any]]:
         """Get database metadata including table and column information.
         
         Returns:
@@ -414,14 +416,14 @@ class Database:
             self.cache['meta'] = meta
         return self.cache['meta']
     
-    def reload(self):
+    def reload(self) -> None:
         self.close()
         self.__init__(
             connection=self.connection, 
             registered_models=list(self.registered_models.values())
         )
 
-    def register_model(self, model):
+    def register_model(self, model: Type[DatabaseModel]) -> None:
         """Register a model class with the database manager.
         
         Args:
@@ -431,7 +433,7 @@ class Database:
         model.db_manager = self
         model._meta.database = self.db
 
-    def load_table_class(self, name, new=False):
+    def load_table_class(self, name: str, new: bool = False) -> Type[DatabaseModel]:
         """Dynamically create a model class for a database table.
         
         Args:
@@ -472,11 +474,11 @@ class Database:
         TableClass.db_manager = self
         return TableClass
 
-    def create_table(self, name_or_model, exists_ok=True):
+    def create_table(self, name_or_model: Union[str, Type[DatabaseModel]], exists_ok: bool = True) -> None:
         """Create a new table in the database.
         
         Args:
-            name (str): Name of the table to create
+            name_or_model (Union[str, Type[DatabaseModel]]): Name of the table to create or model class
             exists_ok (bool): Whether to silently continue if table exists
             
         Raises:
@@ -494,7 +496,7 @@ class Database:
         self.db.create_tables([table])
         self.reload()
 
-    def drop_table(self, name, confirm=True):
+    def drop_table(self, name: str, confirm: bool = True) -> None:
         if confirm:
             response = input(notabs(f"""
                 Are you sure you want to drop table '{name}'?
@@ -508,11 +510,11 @@ class Database:
         self.db.drop_tables([table])
         self.reload()
 
-    def close(self):
+    def close(self) -> None:
         self.db.close()
 
 
-def load_psql():
+def load_psql() -> Database:
     """Load a Database object using the connection url in your config.
 
     Run `da configure postgres` to set your PostgreSQL connection URL.

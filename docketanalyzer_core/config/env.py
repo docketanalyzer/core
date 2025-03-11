@@ -15,14 +15,6 @@ env = Config(
             group="docketanalyzer",
         ),
         ConfigKey(
-            name="COURTLISTENER_TOKEN",
-            key_type="str",
-            description="\nConfigure CourtListener API\n",
-            default=None,
-            mask=True,
-            group="recap",
-        ),
-        ConfigKey(
             name="PACER_USERNAME",
             key_type="str",
             description="\nConfigure PACER Credentials\n",
@@ -37,6 +29,15 @@ env = Config(
             group="pacer",
         ),
         ConfigKey(
+            name="COURTLISTENER_TOKEN",
+            key_type="str",
+            description="\nConfigure CourtListener API\n",
+            default=None,
+            mask=True,
+            group="recap",
+        ),
+        # ML Tools
+        ConfigKey(
             name="HF_TOKEN",
             key_type="str",
             description="\nConfigure Hugging Face Token\n",
@@ -45,20 +46,21 @@ env = Config(
             group="huggingface",
         ),
         ConfigKey(
+            name="WANDB_API_KEY",
+            key_type="str",
+            description="\nConfigure Weights and Biases\n",
+            default=None,
+            mask=True,
+            group="wandb",
+        ),
+        # LLM Providers
+        ConfigKey(
             name="ANTHROPIC_API_KEY",
             key_type="str",
             description="\nConfigure Anthropic\n",
             default=None,
             mask=True,
             group="anthropic",
-        ),
-        ConfigKey(
-            name="GROQ_API_KEY",
-            key_type="str",
-            description="\nConfigure Groq\n",
-            default=None,
-            mask=True,
-            group="groq",
         ),
         ConfigKey(
             name="OPENAI_API_KEY",
@@ -77,6 +79,14 @@ env = Config(
             group="cohere",
         ),
         ConfigKey(
+            name="GROQ_API_KEY",
+            key_type="str",
+            description="\nConfigure Groq\n",
+            default=None,
+            mask=True,
+            group="groq",
+        ),
+        ConfigKey(
             name="TOGETHER_API_KEY",
             key_type="str",
             description="\nConfigure Together AI\n",
@@ -84,6 +94,7 @@ env = Config(
             mask=True,
             group="together",
         ),
+        # Runpod
         ConfigKey(
             name="RUNPOD_API_KEY",
             key_type="str",
@@ -106,22 +117,7 @@ env = Config(
             mask=True,
             group="runpod",
         ),
-        ConfigKey(
-            name="WANDB_API_KEY",
-            key_type="str",
-            description="\nConfigure Weights and Biases\n",
-            default=None,
-            mask=True,
-            group="wandb",
-        ),
-        ConfigKey(
-            name="POSTGRES_URL",
-            key_type="str",
-            description="\nConfigure Postgres\n",
-            default=None,
-            mask=True,
-            group="postgres",
-        ),
+        # Services
         ConfigKey(
             name="ELASTIC_URL",
             key_type="str",
@@ -131,9 +127,22 @@ env = Config(
             group="elastic",
         ),
         ConfigKey(
+            name="POSTGRES_URL",
+            key_type="str",
+            description="\nConfigure Postgres\n",
+            default=None,
+            mask=True,
+            group="psql",
+        ),
+        ConfigKey(
+            name="REDIS_URL",
+            default="redis://localhost:6379/0",
+            group="redis",
+        ),
+        ConfigKey(
             name="AWS_ACCESS_KEY_ID",
             key_type="str",
-            description="\nConfigure AWS S3\n",
+            description="\nConfigure S3\n",
             default=None,
             mask=True,
             group="s3",
@@ -157,6 +166,7 @@ env = Config(
             default=None,
             group="s3",
         ),
+        # Other
         ConfigKey(
             name="WEB_SEARCH_PORT",
             key_type="int",
@@ -187,11 +197,6 @@ env = Config(
             key_type="str",
             default=os.urandom(24),
             mask=True,
-            group="dev",
-        ),
-        ConfigKey(
-            name="REDIS_URL",
-            default="redis://localhost:6379/0",
             group="dev",
         ),
         ConfigKey(

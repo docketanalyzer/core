@@ -1,8 +1,12 @@
 from datetime import datetime
+import shutil
+import botocore
 import pandas as pd
 import peewee as pw
 import pytest
-from docketanalyzer_core import env, load_elastic, DatabaseModel, load_psql
+from docketanalyzer_core import (
+    env, load_elastic, DatabaseModel, load_psql, load_redis, load_s3
+)
 
 
 @pytest.fixture(scope='session')
@@ -38,7 +42,7 @@ def db_with_test_table():
 
 
 @pytest.fixture(scope='session')
-def test_table_schema():
+def table_schema():
     """Create a test table schema."""
 
     class TestTable(DatabaseModel):
@@ -63,12 +67,25 @@ def test_table_schema():
     db.close()
 
 
+@pytest.fixture(scope='session')
+def temp_data_dir():
+    """Create a temp directory in DATA_DIR for S3 tests."""
+
+    temp_dir = env.DATA_DIR / 'temp'
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    yield temp_dir
+
+    shutil.rmtree(temp_dir)
+
+
 def test_elastic_connection():
-    """Test the elasticsearch service."""
+    """Test the Elasticsearch service."""
 
     assert bool(env.ELASTIC_URL), "ELASTIC_URL is not set"
 
     es = load_elastic()
+    
     assert es.ping(), "Elasticsearch could not connect"
 
 
@@ -98,13 +115,12 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
     table.add_data(dummy_data)
 
     # Make sure that adding duplicate data raises an IntegrityError
-    error = None
+    error = False
     try:
         table.add_data(dummy_data)
-    except Exception as e:
-        error = e
-
-    assert isinstance(error, pw.IntegrityError)
+    except pw.IntegrityError:
+        error = True
+    assert error
 
     # Test pandas functionality
     data = table.pandas()
@@ -125,10 +141,10 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
     assert data[0] == 'alice@example.com'
 
 
-def test_psql_standard_table(dummy_data, test_table_schema):
+def test_psql_standard_table(dummy_data, table_schema):
     """Test the standard table functionality."""
 
-    TestTable = test_table_schema
+    TestTable = table_schema
     db = load_psql()
 
     # Register and create the table
@@ -154,3 +170,91 @@ def test_psql_standard_table(dummy_data, test_table_schema):
     assert n == 2
 
     db.close()
+
+
+def test_redis_connection():
+    """Test the Redis service."""
+
+    assert bool(env.REDIS_URL), "REDIS_URL is not set"
+
+    redis = load_redis()
+
+    assert redis.ping(), "Redis could not connect"
+    
+
+
+def test_s3_connection():
+    """Test the S3 service connection."""
+    
+    assert bool(env.AWS_S3_BUCKET_NAME), "AWS_S3_BUCKET_NAME is not set"
+    assert bool(env.AWS_ACCESS_KEY_ID), "AWS_ACCESS_KEY_ID is not set"
+    assert bool(env.AWS_SECRET_ACCESS_KEY), "AWS_SECRET_ACCESS_KEY is not set"
+    
+    s3 = load_s3()
+    
+    assert s3.status(), "S3 could not connect"
+
+
+def test_s3_upload_and_delete(temp_data_dir, dummy_data):
+    """Test the S3 upload and delete functionality."""
+
+    s3 = load_s3()
+
+    # Create a temporary file
+    path = temp_data_dir / 'test.csv'
+    dummy_data.to_csv(path, index=False)
+
+    # Upload the file to S3
+    s3_key = s3.upload(path)
+
+    assert s3_key is not None
+
+    path.unlink()
+
+    assert not path.exists()
+
+    # Download the file from S3
+    s3.download(s3_key)
+
+    assert path.exists()
+
+    # Delete the file from S3
+    s3.delete(s3_key)
+
+    error = False
+    try:
+        s3.download(s3_key)
+    except botocore.exceptions.ClientError:
+        error = True
+    assert error
+
+
+def test_s3_push_and_pull(temp_data_dir, dummy_data):
+    """Test the S3 push and pull functionality."""
+
+    s3 = load_s3()
+
+    # Create a temporary file
+    path = temp_data_dir / 'test.csv'
+    dummy_data.to_csv(path, index=False)
+
+    # Push the file to S3
+    s3.push(temp_data_dir)
+    path.unlink()
+
+    assert not path.exists()
+
+    # Pull the file from S3
+    s3.pull(temp_data_dir)
+
+    assert path.exists()
+
+    # Push and pull with delete = True
+    path.unlink()
+
+    assert not path.exists()
+
+    s3.push(temp_data_dir, delete=True)
+    s3.pull(temp_data_dir)
+
+    assert not path.exists()
