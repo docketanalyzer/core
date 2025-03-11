@@ -28,4 +28,4 @@ def json_default(obj: Any) -> Any:
 
 def notabs(text):
     """Remove leading/trailing whitespace on each line."""
-    return '\n'.join([x.strip() for x in text.split('\n')]).strip()
+    return "\n".join([x.strip() for x in text.split("\n")]).strip()

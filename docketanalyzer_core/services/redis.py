@@ -7,5 +7,5 @@ def load_redis(**kwargs):
 
     Run `da configure elastic` to set the connection URL.
     """
-    redis = Redis.from_url(env.REDIS_URL) 
+    redis = Redis.from_url(env.REDIS_URL)
     return redis

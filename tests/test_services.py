@@ -5,43 +5,50 @@ import pandas as pd
 import peewee as pw
 import pytest
 from docketanalyzer_core import (
-    env, load_elastic, DatabaseModel, load_psql, load_redis, load_s3
+    env,
+    load_elastic,
+    DatabaseModel,
+    load_psql,
+    load_redis,
+    load_s3,
 )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def dummy_data():
     """Create dummy data for testing."""
 
-    data = pd.DataFrame({
-        'email': ['alice@example.com', 'bob@example.com'],
-        'age': [30, 25],
-        'registration_date': [datetime(2020, 1, 1), datetime(2021, 1, 15)],
-    })
+    data = pd.DataFrame(
+        {
+            "email": ["alice@example.com", "bob@example.com"],
+            "age": [30, 25],
+            "registration_date": [datetime(2020, 1, 1), datetime(2021, 1, 15)],
+        }
+    )
 
     return data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def db_with_test_table():
     """Create a test table in the database."""
 
     db = load_psql()
 
     try:
-        db.drop_table('test_schemaless', confirm=False)
+        db.drop_table("test_schemaless", confirm=False)
     except KeyError:
         pass
 
-    db.create_table('test_schemaless')
+    db.create_table("test_schemaless")
 
     yield db
 
-    db.drop_table('test_schemaless', confirm=False)
+    db.drop_table("test_schemaless", confirm=False)
     db.close()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def table_schema():
     """Create a test table schema."""
 
@@ -51,27 +58,27 @@ def table_schema():
         registration_date = pw.DateTimeField()
 
         class Meta:
-            table_name = 'test_standard'
-    
+            table_name = "test_standard"
+
     db = load_psql()
 
     try:
-        db.drop_table('test_standard', confirm=False)
+        db.drop_table("test_standard", confirm=False)
     except KeyError:
         pass
 
     yield TestTable
 
     db.reload()
-    db.drop_table('test_standard', confirm=False)
+    db.drop_table("test_standard", confirm=False)
     db.close()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def temp_data_dir():
     """Create a temp directory in DATA_DIR for S3 tests."""
 
-    temp_dir = env.DATA_DIR / 'temp'
+    temp_dir = env.DATA_DIR / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     yield temp_dir
@@ -85,7 +92,7 @@ def test_elastic_connection():
     assert bool(env.ELASTIC_URL), "ELASTIC_URL is not set"
 
     es = load_elastic()
-    
+
     assert es.ping(), "Elasticsearch could not connect"
 
 
@@ -93,7 +100,7 @@ def test_psql_connection():
     """Test the Postgres service."""
 
     assert bool(env.POSTGRES_URL), "POSTGRES_URL is not set"
-    
+
     db = load_psql()
 
     assert db.status(), "Postgres could not connect"
@@ -106,9 +113,9 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
     table = db.t.test_schemaless
 
     # Add columns to the table and reload
-    table.add_column('email', column_type='TextField', unique=True)
-    table.add_column('age', column_type='IntegerField')
-    table.add_column('registration_date', column_type='DateTimeField')
+    table.add_column("email", column_type="TextField", unique=True)
+    table.add_column("age", column_type="IntegerField")
+    table.add_column("registration_date", column_type="DateTimeField")
     table = db.t.test_schemaless
 
     # Add data to the table
@@ -133,12 +140,12 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
     assert len(data) == 1
 
     # Test delete functionality
-    table.where(table.email == 'bob@example.com').delete()
+    table.where(table.email == "bob@example.com").delete()
 
-    data = table.pandas('email')['email'].tolist()
+    data = table.pandas("email")["email"].tolist()
 
     assert len(data) == 1
-    assert data[0] == 'alice@example.com'
+    assert data[0] == "alice@example.com"
 
 
 def test_psql_standard_table(dummy_data, table_schema):
@@ -158,9 +165,9 @@ def test_psql_standard_table(dummy_data, table_schema):
     data = table.pandas()
 
     assert len(data) == 2
-    assert data['registration_date'].dtype == 'datetime64[ns]'
-    assert data['age'].dtype == 'int64'
-    assert data['email'].dtype == 'object'
+    assert data["registration_date"].dtype == "datetime64[ns]"
+    assert data["age"].dtype == "int64"
+    assert data["email"].dtype == "object"
 
     # Test batching functionality
     n = 0
@@ -180,18 +187,17 @@ def test_redis_connection():
     redis = load_redis()
 
     assert redis.ping(), "Redis could not connect"
-    
 
 
 def test_s3_connection():
     """Test the S3 service connection."""
-    
+
     assert bool(env.AWS_S3_BUCKET_NAME), "AWS_S3_BUCKET_NAME is not set"
     assert bool(env.AWS_ACCESS_KEY_ID), "AWS_ACCESS_KEY_ID is not set"
     assert bool(env.AWS_SECRET_ACCESS_KEY), "AWS_SECRET_ACCESS_KEY is not set"
-    
+
     s3 = load_s3()
-    
+
     assert s3.status(), "S3 could not connect"
 
 
@@ -201,7 +207,7 @@ def test_s3_upload_and_delete(temp_data_dir, dummy_data):
     s3 = load_s3()
 
     # Create a temporary file
-    path = temp_data_dir / 'test.csv'
+    path = temp_data_dir / "test.csv"
     dummy_data.to_csv(path, index=False)
 
     # Upload the file to S3
@@ -235,7 +241,7 @@ def test_s3_push_and_pull(temp_data_dir, dummy_data):
     s3 = load_s3()
 
     # Create a temporary file
-    path = temp_data_dir / 'test.csv'
+    path = temp_data_dir / "test.csv"
     dummy_data.to_csv(path, index=False)
 
     # Push the file to S3
