@@ -24,3 +24,8 @@ def json_default(obj: Any) -> Any:
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
+
+
+def notabs(text):
+    """Remove leading/trailing whitespace on each line."""
+    return '\n'.join([x.strip() for x in text.split('\n')]).strip()

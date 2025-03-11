@@ -14,7 +14,10 @@ requires-python = ">=3.10,<3.11"
 dependencies = [
     "click>=8.0.0",
     "elasticsearch>=8.17.2",
+    "pandas>=2.2.3",
     "pathlib>=1.0.1",
+    "peewee>=3.17.9",
+    "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.0.0",
     "requests>=2.32.3",
     "simplejson>=3.19.3",
