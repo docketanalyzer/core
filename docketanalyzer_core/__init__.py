@@ -5,6 +5,7 @@ from .utils import (
     json_default,
     notabs,
 )
+from .registry import Registry
 from .services import (
     load_elastic,
     Database,
@@ -14,6 +15,7 @@ from .services import (
     S3,
     load_s3,
 )
+from .cli import cli
 
 
 __all__ = [
@@ -24,6 +26,7 @@ __all__ = [
     "construct_docket_id",
     "json_default",
     "notabs",
+    "Registry",
     "load_elastic",
     "Database",
     "DatabaseModel",
@@ -31,4 +34,5 @@ __all__ = [
     "load_redis",
     "S3",
     "load_s3",
+    "cli",
 ]
