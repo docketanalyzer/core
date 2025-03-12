@@ -129,10 +129,7 @@ def build(push):
     Include --push to upload to PyPI.
     """
     package_dir = Path.cwd()
-    build_dir = package_dir / "build"
     dist_dir = package_dir / "dist"
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
 
@@ -162,5 +159,4 @@ def build(push):
         print(f"Uploading to PyPI with command: {cmd}")
         os.system(cmd)
 
-        shutil.rmtree(build_dir)
         shutil.rmtree(dist_dir)
