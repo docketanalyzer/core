@@ -158,7 +158,7 @@ class Config:
         try:
             print(CLI_INTRO.format(path=self.path))
             for key in self.keys.values():
-                if key.group == group or group is None:
+                if key.group == group or (group is None and not key.hide):
                     config[key.name] = self.configure_key(key, config, reset=reset)
             self.path.write_text(json.dumps(config, indent=2, default=str))
             print("Config saved to %s" % self.path)
@@ -226,6 +226,7 @@ class ConfigKey:
         description: Optional[str] = None,
         default: Any = "_",
         mask: bool = False,
+        hide: bool = False,
         alias_names: List[str] = None,
     ) -> None:
         self.name = name
@@ -239,6 +240,7 @@ class ConfigKey:
         self.description = description
         self.default = default
         self.mask = mask
+        self.hide = hide
 
     @property
     def has_default(self) -> bool:

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from .config import Config, ConfigKey
 
@@ -136,7 +135,10 @@ env = Config(
         ),
         ConfigKey(
             name="REDIS_URL",
-            default="redis://localhost:6379/0",
+            key_type="str",
+            description="\nConfigure Redis\n",
+            default=None,
+            mask=True,
             group="redis",
         ),
         ConfigKey(
@@ -166,71 +168,13 @@ env = Config(
             default=None,
             group="s3",
         ),
-        # Other
-        ConfigKey(
-            name="WEB_SEARCH_PORT",
-            key_type="int",
-            default=8080,
-            group="websearch",
-        ),
-        ConfigKey(
-            name="BASE_URL",
-            key_type="str",
-            description="\nConfigure Dev\n",
-            default="http://localhost:5001",
-            group="dev",
-        ),
-        ConfigKey(
-            name="APP_HOST",
-            key_type="str",
-            default="127.0.0.1",
-            group="dev",
-        ),
-        ConfigKey(
-            name="APP_PORT",
-            key_type="int",
-            default=5002,
-            group="dev",
-        ),
-        ConfigKey(
-            name="APP_SECRET_KEY",
-            key_type="str",
-            default=os.urandom(24),
-            mask=True,
-            group="dev",
-        ),
-        ConfigKey(
-            name="POSTMARK_API_KEY",
-            key_type="str",
-            default=None,
-            mask=True,
-            group="dev",
-        ),
-        ConfigKey(
-            name="AUTH0_DOMAIN",
-            key_type="str",
-            default=None,
-            group="dev",
-        ),
-        ConfigKey(
-            name="AUTH0_CLIENT_ID",
-            key_type="str",
-            default=None,
-            mask=True,
-            group="dev",
-        ),
-        ConfigKey(
-            name="AUTH0_CLIENT_SECRET",
-            key_type="str",
-            default=None,
-            mask=True,
-            group="dev",
-        ),
+        # Dev
         ConfigKey(
             name="PYPI_TOKEN",
             key_type="str",
             default=None,
             mask=True,
+            hide=True,
             group="dev",
         ),
     ],

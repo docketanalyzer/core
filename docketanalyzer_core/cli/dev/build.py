@@ -3,7 +3,6 @@ import shutil
 import click
 from pathlib import Path
 import re
-import tomli
 from typing import Tuple
 from docketanalyzer_core import env
 
@@ -78,6 +77,8 @@ def get_version_from_pyproject(pyproject_path: Path) -> str:
     Returns:
         Version string
     """
+    import tomli
+
     content = pyproject_path.read_text(encoding="utf-8")
     pyproject_data = tomli.loads(content)
     return pyproject_data["project"]["version"]

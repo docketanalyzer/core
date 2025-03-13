@@ -1,19 +1,29 @@
+[![Docs](https://img.shields.io/badge/docs-in%20progress-yellow)](https://docs.docketanalyzer.com/api/main/)
+
 # Docket Analyzer Core
 
 Core utilities for Docket Analyzer modules
 
-## Configure
+Full documentation available at [docs.docketanalyzer.com](https://docs.docketanalyzer.com)
 
-To run the configure command outside the main `docketanalyzer` package, use this:
+## Install and Configure
+
+Install docketanalyzer:
 
 ```
-python -m docketanalyzer_core configure
+pip install `docketanalyzer[all]`
+```
+
+Run the configuration script:
+
+```
+da configure
 ```
 
 ## Load Configured Env
 
 ```
-from docketanalyzer_core import env
+from docketanalyzer import env
 
 print(env.VARIABLE_NAME)
 ```

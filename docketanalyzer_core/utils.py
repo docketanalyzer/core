@@ -1,9 +1,5 @@
 from datetime import datetime, date
 from typing import Any
-from pathlib import Path
-
-
-BASE_DIR = Path(__file__).parent.parent
 
 
 def parse_docket_id(docket_id: str) -> tuple[str, str]:

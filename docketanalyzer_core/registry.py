@@ -9,8 +9,30 @@ class Registry:
     """
     A registry system that automatically discovers and registers objects based on custom criteria.
 
-    Subclass this and implement find_filter() to define what objects should be registered.
-    Then use find() to automatically populate the registry from a module.
+    Usage example:
+
+    ```python
+    from docketanalyzer import Registry
+    from somewhere import SomeBaseClass
+
+
+    class SomeRegistry(Registry):
+        def find_filter(self, obj):
+            return (
+                isinstance(obj, type) and
+                issubclass(obj, SomeBaseClass) and
+                obj is not SomeBaseClass
+            )
+
+
+    some_registry = SomeRegistry()
+
+    # Find subclasses of SomeBaseClass in this module
+    some_registry.find(recurse=True)
+
+    # Import these into the current namespace
+    some_registry.import_registered()
+    ```
     """
 
     def __init__(self) -> None:
@@ -41,7 +63,7 @@ class Registry:
 
     def find(self, module: Optional[ModuleType] = None, recurse: bool = False) -> None:
         """
-        Find all objects in the module that match the registration criteria.
+        Find and register all objects in the module that match the registration criteria.
         """
         if module is None:
             module = self.module

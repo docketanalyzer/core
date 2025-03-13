@@ -6,6 +6,14 @@
 pip install '.[dev]'
 ```
 
+## Configure
+
+To run the configure command outside the main `docketanalyzer` package, use this:
+
+```
+python -m docketanalyzer_core configure
+```
+
 ## Test
 
 ```
@@ -21,6 +29,6 @@ ruff format . && ruff check --fix .
 ## Build and Push to PyPi
 
 ```
-python -m docketanalyzer_core build
-python -m docketanalyzer_core build --push
+python -m docketanalyzer_core dev build
+python -m docketanalyzer_core dev build --push
 ```

@@ -21,7 +21,7 @@ class ConfigGroup(click.ParamType):
 
 @click.command(
     help=notabs(f"""
-        Run the configuration wizard to setup your environment.
+        Configure your environment
 
         GROUP: Optional filter for a group of config keys (one of: {config_groups_str}).
 
