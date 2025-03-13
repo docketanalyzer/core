@@ -116,6 +116,13 @@ env = Config(
             mask=True,
             group="runpod",
         ),
+        ConfigKey(
+            name="REMOTE_OCR_ENDPOINT_ID",
+            key_type="str",
+            default=None,
+            mask=True,
+            group="runpod",
+        ),
         # Services
         ConfigKey(
             name="ELASTIC_URL",
