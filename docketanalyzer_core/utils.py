@@ -1,5 +1,9 @@
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any
+
+import requests
+from tqdm import tqdm
 
 
 def parse_docket_id(docket_id: str) -> tuple[str, str]:
@@ -25,3 +29,25 @@ def json_default(obj: Any) -> Any:
 def notabs(text):
     """Remove leading/trailing whitespace on each line."""
     return "\n".join([x.strip() for x in text.split("\n")]).strip()
+
+
+def download_file(url, path, description="Downloading"):
+    """Download file from URL to local path with progress bar."""
+    path = str(path)
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    total_size = int(response.headers.get("content-length", 0))
+
+    with (
+        Path.open(path, "wb") as file,
+        tqdm(
+            desc=description,
+            total=total_size,
+            unit="iB",
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as progress,
+    ):
+        for data in response.iter_content(chunk_size=1024):
+            size = file.write(data)
+            progress.update(size)

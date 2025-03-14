@@ -4,6 +4,7 @@ from .utils import (
     parse_docket_id,
     json_default,
     notabs,
+    download_file,
 )
 from .registry import Registry
 from .services import (
@@ -27,6 +28,7 @@ __all__ = [
     "Registry",
     "cli",
     "construct_docket_id",
+    "download_file",
     "env",
     "json_default",
     "load_elastic",
