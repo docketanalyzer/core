@@ -1,13 +1,16 @@
-from datetime import datetime
 import shutil
+from contextlib import suppress
+from datetime import datetime
+
 import botocore
 import pandas as pd
 import peewee as pw
 import pytest
+
 from docketanalyzer_core import (
+    DatabaseModel,
     env,
     load_elastic,
-    DatabaseModel,
     load_psql,
     load_redis,
     load_s3,
@@ -17,7 +20,6 @@ from docketanalyzer_core import (
 @pytest.fixture(scope="session")
 def dummy_data():
     """Create dummy data for testing."""
-
     data = pd.DataFrame(
         {
             "email": ["alice@example.com", "bob@example.com"],
@@ -32,13 +34,10 @@ def dummy_data():
 @pytest.fixture(scope="session")
 def db_with_test_table():
     """Create a test table in the database."""
-
     db = load_psql()
 
-    try:
+    with suppress(KeyError):
         db.drop_table("test_schemaless", confirm=False)
-    except KeyError:
-        pass
 
     db.create_table("test_schemaless")
 
@@ -62,10 +61,8 @@ def table_schema():
 
     db = load_psql()
 
-    try:
+    with suppress(KeyError):
         db.drop_table("test_standard", confirm=False)
-    except KeyError:
-        pass
 
     yield TestTable
 
@@ -77,7 +74,6 @@ def table_schema():
 @pytest.fixture(scope="session")
 def temp_data_dir():
     """Create a temp directory in DATA_DIR for S3 tests."""
-
     temp_dir = env.DATA_DIR / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -88,8 +84,8 @@ def temp_data_dir():
 
 def test_elastic_connection():
     """Test the Elasticsearch service."""
-
-    assert bool(env.ELASTIC_URL), "ELASTIC_URL is not set"
+    key_check = bool(env.ELASTIC_URL)
+    assert key_check, "ELASTIC_URL is not set"
 
     es = load_elastic()
 
@@ -98,8 +94,8 @@ def test_elastic_connection():
 
 def test_psql_connection():
     """Test the Postgres service."""
-
-    assert bool(env.POSTGRES_URL), "POSTGRES_URL is not set"
+    key_check = bool(env.POSTGRES_URL)
+    assert key_check, "POSTGRES_URL is not set"
 
     db = load_psql()
 
@@ -108,7 +104,6 @@ def test_psql_connection():
 
 def test_psql_schemaless_table(dummy_data, db_with_test_table):
     """Test the schemaless table functionality."""
-
     db = db_with_test_table
     table = db.t.test_schemaless
 
@@ -150,13 +145,12 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
 
 def test_psql_standard_table(dummy_data, table_schema):
     """Test the standard table functionality."""
-
-    TestTable = table_schema
+    test_table = table_schema
     db = load_psql()
 
     # Register and create the table
-    db.register_model(TestTable)
-    db.create_table(TestTable)
+    db.register_model(test_table)
+    db.create_table(test_table)
     table = db.t.test_standard
 
     # Add data to the table using copy
@@ -181,8 +175,8 @@ def test_psql_standard_table(dummy_data, table_schema):
 
 def test_redis_connection():
     """Test the Redis service."""
-
-    assert bool(env.REDIS_URL), "REDIS_URL is not set"
+    key_check = bool(env.REDIS_URL)
+    assert key_check, "REDIS_URL is not set"
 
     redis = load_redis()
 
@@ -191,10 +185,14 @@ def test_redis_connection():
 
 def test_s3_connection():
     """Test the S3 service connection."""
-
-    assert bool(env.AWS_S3_BUCKET_NAME), "AWS_S3_BUCKET_NAME is not set"
-    assert bool(env.AWS_ACCESS_KEY_ID), "AWS_ACCESS_KEY_ID is not set"
-    assert bool(env.AWS_SECRET_ACCESS_KEY), "AWS_SECRET_ACCESS_KEY is not set"
+    key_check = bool(env.AWS_S3_BUCKET_NAME)
+    assert key_check, "AWS_S3_BUCKET_NAME is not set"
+    key_check = bool(env.AWS_ACCESS_KEY_ID)
+    assert key_check, "AWS_ACCESS_KEY_ID is not set"
+    key_check = bool(env.AWS_SECRET_ACCESS_KEY)
+    assert key_check, "AWS_SECRET_ACCESS_KEY is not set"
+    key_check = bool(env.AWS_S3_ENDPOINT_URL)
+    assert key_check, "AWS_S3_ENDPOINT_URL is not set"
 
     s3 = load_s3()
 
@@ -203,7 +201,6 @@ def test_s3_connection():
 
 def test_s3_upload_and_delete(temp_data_dir, dummy_data):
     """Test the S3 upload and delete functionality."""
-
     s3 = load_s3()
 
     # Create a temporary file
@@ -237,7 +234,6 @@ def test_s3_upload_and_delete(temp_data_dir, dummy_data):
 
 def test_s3_push_and_pull(temp_data_dir, dummy_data):
     """Test the S3 push and pull functionality."""
-
     s3 = load_s3()
 
     # Create a temporary file

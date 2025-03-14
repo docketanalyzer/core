@@ -1,12 +1,12 @@
 import click
 
-from .dev import dev
 from .configure import configure
+from .dev import dev
 
 
 @click.group()
 def cli():
-    """Docket Analyzer CLI"""
+    """Docket Analyzer CLI."""
     pass
 
 

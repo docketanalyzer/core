@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any
 
 
@@ -17,7 +17,7 @@ def construct_docket_id(court: str, docket_number: str) -> str:
 
 def json_default(obj: Any) -> Any:
     """Default JSON serializer for datetime and date objects."""
-    if isinstance(obj, (datetime, date)):
+    if isinstance(obj, datetime | date):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 

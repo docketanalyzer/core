@@ -1,6 +1,6 @@
 from pathlib import Path
-from .config import Config, ConfigKey
 
+from .config import Config, ConfigKey
 
 env = Config(
     path=Path.home() / ".cache" / "docketanalyzer" / "config.json",
@@ -103,21 +103,21 @@ env = Config(
             group="runpod",
         ),
         ConfigKey(
-            name="REMOTE_INFERENCE_ENDPOINT_ID",
+            name="RUNPOD_INFERENCE_ENDPOINT_ID",
             key_type="str",
             default=None,
             mask=True,
             group="runpod",
         ),
         ConfigKey(
-            name="REMOTE_ROUTINES_ENDPOINT_ID",
+            name="RUNPOD_ROUTINES_ENDPOINT_ID",
             key_type="str",
             default=None,
             mask=True,
             group="runpod",
         ),
         ConfigKey(
-            name="REMOTE_OCR_ENDPOINT_ID",
+            name="RUNPOD_OCR_ENDPOINT_ID",
             key_type="str",
             default=None,
             mask=True,

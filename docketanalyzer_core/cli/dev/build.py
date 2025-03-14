@@ -1,15 +1,15 @@
 import os
-import shutil
-import click
-from pathlib import Path
 import re
-from typing import Tuple
-from docketanalyzer_core import env
+import shutil
+from pathlib import Path
+
+import click
+
+from ... import env
 
 
-def parse_version(version_str: str) -> Tuple[int, ...]:
-    """
-    Parse a version string into a tuple of integers.
+def parse_version(version_str: str) -> tuple[int, ...]:
+    """Parse a version string into a tuple of integers.
 
     Args:
         version_str: Version string in format "x.y.z"
@@ -20,9 +20,8 @@ def parse_version(version_str: str) -> Tuple[int, ...]:
     return tuple(map(int, version_str.split(".")))
 
 
-def is_valid_increment(v1: Tuple[int, ...], v2: Tuple[int, ...]) -> Tuple[bool, str]:
-    """
-    Check if v2 is a valid semantic version increment from v1.
+def is_valid_increment(v1: tuple[int, ...], v2: tuple[int, ...]) -> tuple[bool, str]:
+    """Check if v2 is a valid semantic version increment from v1.
 
     Args:
         v1: First version as a tuple of integers
@@ -37,10 +36,8 @@ def is_valid_increment(v1: Tuple[int, ...], v2: Tuple[int, ...]) -> Tuple[bool, 
     for i in range(3):
         if v2[i] > v1[i]:
             if v2[i] == v1[i] + 1 and v2[i + 1 :] == (0,) * (2 - i):
-                return (
-                    True,
-                    f"Valid increment at {'major' if i == 0 else 'minor' if i == 1 else 'patch'} level",
-                )
+                level = "major" if i == 0 else "minor" if i == 1 else "patch"
+                return (True, f"Valid increment at {level} level")
             else:
                 return False, "Invalid increment"
         elif v2[i] < v1[i]:
@@ -49,9 +46,8 @@ def is_valid_increment(v1: Tuple[int, ...], v2: Tuple[int, ...]) -> Tuple[bool, 
     return False, "Other issue"
 
 
-def compare_versions(version1: str, version2: str) -> Tuple[bool, str]:
-    """
-    Compare two version strings and check if the second is a valid increment of the first.
+def compare_versions(version1: str, version2: str) -> tuple[bool, str]:
+    """Validate version increment.
 
     Args:
         version1: First version string
@@ -68,8 +64,7 @@ def compare_versions(version1: str, version2: str) -> Tuple[bool, str]:
 
 
 def get_version_from_pyproject(pyproject_path: Path) -> str:
-    """
-    Extract version from pyproject.toml file.
+    """Extract version from pyproject.toml file.
 
     Args:
         pyproject_path: Path to pyproject.toml file
@@ -85,8 +80,7 @@ def get_version_from_pyproject(pyproject_path: Path) -> str:
 
 
 def update_version_in_pyproject(pyproject_path: Path, new_version: str) -> None:
-    """
-    Update version in pyproject.toml file.
+    """Update version in pyproject.toml file.
 
     Args:
         pyproject_path: Path to pyproject.toml file
@@ -100,8 +94,7 @@ def update_version_in_pyproject(pyproject_path: Path, new_version: str) -> None:
 
 
 def update_version(version: str) -> str:
-    """
-    Prompt user to update version and validate the input.
+    """Prompt user to update version and validate the input.
 
     Args:
         version: Current version string
@@ -125,9 +118,14 @@ def update_version(version: str) -> str:
 @click.command()
 @click.option("--push", is_flag=True, help="Push to PyPI after building")
 def build(push):
-    """
-    Build the package in the current directory.
-    Include --push to upload to PyPI.
+    """Build the package in the current directory.
+
+    Args:
+        push (bool): Whether to push the package to PyPI after building
+    Raises:
+        FileNotFoundError: If pyproject.toml is not found in the current directory
+        ValueError: If the version change is not valid
+        Exception: If the build or upload process fails
     """
     package_dir = Path.cwd()
     dist_dir = package_dir / "dist"

@@ -33,7 +33,7 @@ print(env.VARIABLE_NAME)
 ### Elasticsearch
 
 ```python
-from docketanalyzer_core import load_elastic
+from docketanalyzer import load_elastic
 
 es = load_elastic()
 print(es.ping())
@@ -51,7 +51,7 @@ print(db.status())
 ### Redis
 
 ```python
-from docketanalyzer_core import load_redis
+from docketanalyzer import load_redis
 
 redis = load_redis()
 print(redis.ping())
@@ -60,7 +60,7 @@ print(redis.ping())
 ### S3
 
 ```python
-from docketanalyzer_core import load_s3
+from docketanalyzer import load_s3
 
 s3 = load_s3()
 print(s3.status())
@@ -71,7 +71,7 @@ print(s3.status())
 Example usage:
 
 ```python
-from docketanalyzer_core import Registry, SomeBaseClass
+from docketanalyzer import Registry, SomeBaseClass
 
 
 class SomeRegistry(Registry):

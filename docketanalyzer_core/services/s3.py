@@ -1,28 +1,30 @@
 import os
+from contextlib import suppress
 from pathlib import Path
+from typing import Any, cast
+
 import boto3
-from typing import Optional, Union, Tuple, Any, cast
 from botocore.client import Config
+
 from .. import env
 
 
 class S3:
-    """
-    A class for syncing local data with an S3 bucket.
+    """A class for syncing local data with an S3 bucket.
 
     Attributes:
         data_dir (Path): Local directory for data storage.
         bucket (Path): S3 bucket name.
-        endpoint_url (Optional[str]): Custom S3 endpoint URL, if using a non-AWS S3 service.
+        endpoint_url (Optional[str]): Custom S3 endpoint URL.
         client (boto3.client): Boto3 S3 client for direct API interactions.
     """
 
-    def __init__(self, data_dir: Optional[str] = None) -> None:
-        """
-        Initialize the S3 service.
+    def __init__(self, data_dir: str | None = None) -> None:
+        """Initialize the S3 service.
 
         Args:
-            data_dir (Optional[str]): Path to local data directory. If None, uses env.DATA_DIR.
+            data_dir (Optional[str]): Path to local data directory.
+                If None, uses env.DATA_DIR.
         """
         self.data_dir = Path(data_dir or env.DATA_DIR)
         self.bucket = Path(env.AWS_S3_BUCKET_NAME)
@@ -37,15 +39,14 @@ class S3:
 
     def _sync(
         self,
-        from_path: Union[str, Path],
-        to_path: Union[str, Path],
+        from_path: str | Path,
+        to_path: str | Path,
         confirm: bool = False,
         exclude_hidden: bool = True,
         exact_timestamps: bool = True,
         **kwargs: Any,
     ) -> None:
-        """
-        Execute an AWS S3 sync command between two paths.
+        """Execute an AWS S3 sync command between two paths.
 
         This is a private helper method that constructs and executes an AWS CLI command
         for syncing files between local and S3 storage.
@@ -55,7 +56,7 @@ class S3:
             to_path (Union[str, Path]): Destination path to sync to.
             confirm (bool): If True, asks for confirmation before executing the command.
             exclude_hidden (bool): If True, excludes hidden files and directories.
-            exact_timestamps (bool): If True, compares timestamps with millisecond precision.
+            exact_timestamps (bool): If True, compares timestamps.
             **kwargs: Additional arguments to pass to the AWS CLI s3 sync command.
         """
         cmd = f"aws s3 sync {from_path} {to_path}"
@@ -74,7 +75,7 @@ class S3:
             if isinstance(v, bool):
                 if v:
                     cmd += f" --{k}"
-            elif isinstance(v, (list, tuple)):
+            elif isinstance(v, list | tuple):
                 for item in v:
                     cmd += f' --{k} "{item}"'
             else:
@@ -91,18 +92,18 @@ class S3:
 
     def _prepare_paths(
         self,
-        path: Optional[Union[str, Path]],
-        from_path: Optional[Union[str, Path]],
-        to_path: Optional[Union[str, Path]],
-    ) -> Tuple[Path, Path]:
-        """
-        Prepare source and destination paths for sync operations.
+        path: str | Path | None,
+        from_path: str | Path | None,
+        to_path: str | Path | None,
+    ) -> tuple[Path, Path]:
+        """Prepare source and destination paths for sync operations.
 
         This method handles path normalization and ensures paths are properly
         formatted for sync operations.
 
         Args:
-            path (Optional[Union[str, Path]]): If provided, used as both from_path and to_path.
+            path (Optional[Union[str, Path]]): If provided, used as both
+                from_path and to_path.
             from_path (Optional[Union[str, Path]]): Source path for sync operation.
             to_path (Optional[Union[str, Path]]): Destination path for sync operation.
 
@@ -111,31 +112,28 @@ class S3:
         """
         if path is not None:
             path = Path(path)
-            try:
+
+            with suppress(ValueError):
                 path = path.relative_to(self.data_dir)
-            except ValueError:
-                pass
             from_path = to_path = path
 
         # Cast to handle the case where from_path or to_path might be None
-        return Path(cast(Union[str, Path], from_path)), Path(
-            cast(Union[str, Path], to_path)
-        )
+        return Path(cast(str | Path, from_path)), Path(cast(str | Path, to_path))
 
     def push(
         self,
-        path: Optional[Union[str, Path]] = None,
-        from_path: Optional[Union[str, Path]] = None,
-        to_path: Optional[Union[str, Path]] = None,
+        path: str | Path | None = None,
+        from_path: str | Path | None = None,
+        to_path: str | Path | None = None,
         **kwargs: Any,
     ) -> None:
-        """
-        Push data from local storage to S3.
+        """Push data from local storage to S3.
 
         Syncs files from a local directory to an S3 bucket path.
 
         Args:
-            path (Optional[Union[str, Path]]): If provided, used as both from_path and to_path.
+            path (Optional[Union[str, Path]]): If provided, used as both
+                from_path and to_path.
             from_path (Optional[Union[str, Path]]): Local source path to sync from.
             to_path (Optional[Union[str, Path]]): S3 destination path to sync to.
             **kwargs: Additional arguments to pass to the AWS CLI s3 sync command.
@@ -148,18 +146,18 @@ class S3:
 
     def pull(
         self,
-        path: Optional[Union[str, Path]] = None,
-        from_path: Optional[Union[str, Path]] = None,
-        to_path: Optional[Union[str, Path]] = None,
+        path: str | Path | None = None,
+        from_path: str | Path | None = None,
+        to_path: str | Path | None = None,
         **kwargs: Any,
     ) -> None:
-        """
-        Pull data from S3 to local storage.
+        """Pull data from S3 to local storage.
 
         Syncs files from an S3 bucket path to a local directory.
 
         Args:
-            path (Optional[Union[str, Path]]): If provided, used as both from_path and to_path.
+            path (Optional[Union[str, Path]]): If provided, used as both
+                from_path and to_path.
             from_path (Optional[Union[str, Path]]): S3 source path to sync from.
             to_path (Optional[Union[str, Path]]): Local destination path to sync to.
             **kwargs: Additional arguments to pass to the AWS CLI s3 sync command.
@@ -170,11 +168,8 @@ class S3:
         from_path = f"s3://{self.bucket / from_path}"
         self._sync(from_path, to_path, **kwargs)
 
-    def download(
-        self, s3_key: str, local_path: Optional[Union[str, Path]] = None
-    ) -> Path:
-        """
-        Download a single file from S3 using the boto3 client.
+    def download(self, s3_key: str, local_path: str | Path | None = None) -> Path:
+        """Download a single file from S3 using the boto3 client.
 
         This method downloads a specific file from S3 to a local path.
         If local_path is not provided, it will mirror the S3 path structure
@@ -191,12 +186,7 @@ class S3:
         Raises:
             botocore.exceptions.ClientError: If the download fails.
         """
-
-        if local_path is None:
-            local_path = self.data_dir / s3_key
-        else:
-            local_path = Path(local_path)
-
+        local_path = self.data_dir / s3_key if local_path is None else Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.client.download_file(
@@ -205,9 +195,8 @@ class S3:
 
         return local_path
 
-    def upload(self, local_path: Union[str, Path], s3_key: Optional[str] = None) -> str:
-        """
-        Upload a single file to S3 using the boto3 client.
+    def upload(self, local_path: str | Path, s3_key: str | None = None) -> str:
+        """Upload a single file to S3 using the boto3 client.
 
         This method uploads a specific file from a local path to S3.
         If s3_key is not provided, it will use the relative path from data_dir
@@ -243,8 +232,7 @@ class S3:
         return s3_key
 
     def delete(self, s3_key: str) -> None:
-        """
-        Delete a single file from S3 using the boto3 client.
+        """Delete a single file from S3 using the boto3 client.
 
         Args:
             s3_key (str): The key of the file in the S3 bucket to delete.

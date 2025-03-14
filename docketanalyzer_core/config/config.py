@@ -1,11 +1,12 @@
-from pathlib import Path
-import simplejson as json
 import os
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any, Union
+
+import simplejson as json
 from dotenv import load_dotenv
-from typing import Dict, List, Any, Optional, Callable, Union
 
-
-KEY_TYPES: Dict[str, Callable] = {
+KEY_TYPES: dict[str, Callable] = {
     "str": str,
     "int": int,
     "float": float,
@@ -30,7 +31,8 @@ Use '*' to reset to the default value.
 
 
 class Config:
-    """
+    """Configuration manager for package env.
+
     Manages package configuration with support for environment variables, defaults,
     and persistent storage.
 
@@ -41,20 +43,22 @@ class Config:
     | - Interactive CLI configuration
     | - Type validation for config values
     | - Support for masked sensitive values
-
-    Args:
-        path: Path to the JSON configuration file
-        keys: List of ConfigKey objects defining valid configuration options
-        autoload_env: Whether to automatically load .env file from current directory
     """
 
     def __init__(
-        self, path: Union[str, Path], keys: List["ConfigKey"], autoload_env: bool = True
-    ) -> None:
+        self, path: str | Path, keys: list["ConfigKey"], autoload_env: bool = True
+    ):
+        """Initialize the Config instance.
+
+        Args:
+            path: Path to the JSON configuration file
+            keys: List of ConfigKey objects defining valid configuration options
+            autoload_env: Whether to automatically load .env file from current directory
+        """
         self.path: Path = Path(path).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.keys: Dict[str, "ConfigKey"] = {}
-        self.cache: Dict[str, Any] = {}
+        self.keys: dict[str, ConfigKey] = {}
+        self.cache: dict[str, Any] = {}
         if autoload_env:
             load_dotenv(Path.cwd() / ".env", override=True)
         for key in keys:
@@ -74,7 +78,7 @@ class Config:
             self.set(key.name, value)
 
     @property
-    def alias_map(self) -> Dict[str, str]:
+    def alias_map(self) -> dict[str, str]:
         """Returns a mapping of alias names to primary key names.
 
         Returns:
@@ -88,7 +92,7 @@ class Config:
             self.cache["alias_map"] = alias_map
         return self.cache["alias_map"]
 
-    def load_stored_config(self) -> Dict[str, Any]:
+    def load_stored_config(self) -> dict[str, Any]:
         """Load configuration from the JSON file.
 
         Returns:
@@ -101,7 +105,7 @@ class Config:
         return {}
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """Get the complete configuration with all resolved values.
 
         Returns:
@@ -114,12 +118,12 @@ class Config:
             try:
                 config[key.name] = key.convert(value)
             except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid value for {key.name}: {str(e)}")
+                raise f"Invalid value for {key.name}: {e!s}" from e
         return config
 
     def configure_key(
-        self, key: "ConfigKey", config: Dict[str, Any], reset: bool = False
-    ) -> Optional[str]:
+        self, key: "ConfigKey", config: dict[str, Any], reset: bool = False
+    ) -> str | None:
         """Configure a single key through interactive CLI.
 
         Args:
@@ -147,7 +151,7 @@ class Config:
                 return self.configure_key(key, config, reset=reset)
         return None if updated_value is None else str(updated_value)
 
-    def configure(self, group: Optional[str] = None, reset: bool = False) -> None:
+    def configure(self, group: str | None = None, reset: bool = False) -> None:
         """Run interactive configuration for all keys or a specific group.
 
         Args:
@@ -161,7 +165,7 @@ class Config:
                 if key.group == group or (group is None and not key.hide):
                     config[key.name] = self.configure_key(key, config, reset=reset)
             self.path.write_text(json.dumps(config, indent=2, default=str))
-            print("Config saved to %s" % self.path)
+            print(f"Config saved to {self.path}")
         except KeyboardInterrupt:
             print("\nExiting without saving.")
 
@@ -182,7 +186,7 @@ class Config:
             namespace: Dictionary to add configuration keys to
         """
         for key in self.keys.values():
-            for name in [key.name] + key.alias_names:
+            for name in [key.name, *key.alias_names]:
                 namespace[name] = self.config[key.name]
 
     def __getitem__(self, name: str) -> Any:
@@ -198,43 +202,52 @@ class Config:
         return value or os.environ.get(name)
 
     def __getattr__(self, name):
+        """Get a configuration value by key name or alias.
+
+        Args:
+            name: Key name or alias
+        Returns:
+            Any: Configuration value from config file or environment variable
+        """
         return self[name]
 
     def __str__(self):
+        """Get a string representation of the configuration."""
         return str(json.dumps(self.config, indent=2, default=str))
 
 
 class ConfigKey:
-    """
-    Defines a configuration key with its properties and validation rules.
-
-    Args:
-        name: Name of the configuration key
-        group: Optional group for organizing related keys
-        key_type: Type of the key value ('str', 'int', 'float', 'bool', 'path')
-        description: Optional description for CLI help
-        default: Default value, use '_' for no default
-        mask: Whether to mask the value when displaying (for sensitive data)
-        alias_names: List of alternative names for the key
-    """
+    """Defines a configuration key with its properties and validation rules."""
 
     def __init__(
         self,
         name: str,
-        group: Optional[str] = None,
+        group: str | None = None,
         key_type: str = "str",
-        description: Optional[str] = None,
+        description: str | None = None,
         default: Any = "_",
         mask: bool = False,
         hide: bool = False,
-        alias_names: List[str] = None,
-    ) -> None:
+        alias_names: list[str] | None = None,
+    ):
+        """Initialize a ConfigKey with its properties and validation rules.
+
+        Args:
+            name: Name of the configuration key
+            group: Optional group for organizing related keys
+            key_type: Type of the key value ('str', 'int', 'float', 'bool', 'path')
+            description: Optional description for CLI help
+            default: Default value, use '_' for no default
+            mask: Whether to mask the value when displaying (for sensitive data)
+            hide: Whether to hide the key from CLI prompts unless group is specified
+            alias_names: List of alternative names for the key
+        """
         self.name = name
         self.alias_names = alias_names or []
         self.group = group
         if key_type not in KEY_TYPES:
             raise ValueError(
-                "key_type must be one of %s" % ",".join(list(KEY_TYPES.keys()))
+                "key_type must be one of " + ",".join(list(KEY_TYPES.keys()))
             )
         self.key_type = key_type
         self.description = description
@@ -244,15 +257,34 @@ class ConfigKey:
 
     @property
     def has_default(self) -> bool:
+        """Check if the key has a default value.
+
+        Returns:
+            bool: True if a default value is set and not '_'
+        """
         return self.default != "_"
 
     def display_value(self, value: Any) -> str:
+        """Get the value for display, masking if necessary.
+
+        Args:
+            value: Value to display
+        Returns:
+            str: Display value, masked if mask is enabled
+        """
         if self.mask:
             value = str(value)
             mask_len = max([len(value) - 4, 0])
             value = "*" * mask_len + value[mask_len:]
         return value
 
-    def convert(self, value: Any) -> Any:
+    def convert(self, value: Any) -> Any | None:
+        """Convert the value to the specified key type.
+
+        Args:
+            value: Value to convert
+        Returns:
+            Any: Converted value
+        """
         if value is not None:
             return KEY_TYPES[self.key_type](value)

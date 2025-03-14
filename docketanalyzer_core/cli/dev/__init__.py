@@ -1,10 +1,11 @@
 import click
+
 from .build import build
 
 
 @click.group()
 def dev():
-    """Development CLI commands"""
+    """Development CLI commands."""
     pass
 
 
