@@ -27,7 +27,7 @@ class S3:
                 If None, uses env.DATA_DIR.
         """
         self.data_dir = Path(data_dir or env.DATA_DIR)
-        self.bucket = Path(env.AWS_S3_BUCKET_NAME)
+        self.bucket = env.AWS_S3_BUCKET_NAME
         self.endpoint_url = env.AWS_S3_ENDPOINT_URL
         self.client = boto3.client(
             "s3",
@@ -141,7 +141,7 @@ class S3:
         from_path, to_path = self._prepare_paths(path, from_path, to_path)
         if self.data_dir is not None:
             from_path = self.data_dir / from_path
-        to_path = f"s3://{self.bucket / to_path}"
+        to_path = f"s3://{Path(self.bucket) / to_path}"
         self._sync(from_path, to_path, **kwargs)
 
     def pull(
@@ -165,7 +165,7 @@ class S3:
         from_path, to_path = self._prepare_paths(path, from_path, to_path)
         if self.data_dir is not None:
             to_path = self.data_dir / to_path
-        from_path = f"s3://{self.bucket / from_path}"
+        from_path = f"s3://{Path(self.bucket) / from_path}"
         self._sync(from_path, to_path, **kwargs)
 
     def download(self, s3_key: str, local_path: str | Path | None = None) -> Path:
@@ -190,7 +190,7 @@ class S3:
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.client.download_file(
-            Bucket=str(self.bucket), Key=s3_key, Filename=str(local_path)
+            Bucket=self.bucket, Key=s3_key, Filename=str(local_path)
         )
 
         return local_path
@@ -226,7 +226,7 @@ class S3:
                 s3_key = local_path.name
 
         self.client.upload_file(
-            Filename=str(local_path), Bucket=str(self.bucket), Key=s3_key
+            Filename=str(local_path), Bucket=self.bucket, Key=s3_key
         )
 
         return s3_key
@@ -240,7 +240,7 @@ class S3:
         Raises:
             botocore.exceptions.ClientError: If the deletion fails.
         """
-        self.client.delete_object(Bucket=str(self.bucket), Key=s3_key)
+        self.client.delete_object(Bucket=self.bucket, Key=s3_key)
 
     def status(self) -> bool:
         """Check if S3 connection is working."""
