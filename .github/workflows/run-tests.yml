@@ -10,7 +10,7 @@ on:
 
 jobs:
   tests:
-    uses: docketanalyzer/core/.github/workflows/tests.yml
+    uses: docketanalyzer/core/.github/workflows/tests.yml@main
     secrets: inherit
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
