@@ -58,6 +58,24 @@ def get_pyproject_shared_config(module_name: str) -> dict[str, Any]:
                         "cost: tests that incur real costs when run",
                         "local: requires credentials only available locally",
                     ],
+                    "filterwarnings": [
+                        (
+                            "ignore:builtin type SwigPyPacked has "
+                            "no __module__ attribute:DeprecationWarning"
+                        ),
+                        (
+                            "ignore:builtin type SwigPyObject has "
+                            "no __module__ attribute:DeprecationWarning"
+                        ),
+                        (
+                            "ignore:builtin type swigvarlink has "
+                            "no __module__ attribute:DeprecationWarning"
+                        ),
+                        (
+                            "ignore:distutils Version classes are "
+                            "deprecated:DeprecationWarning"
+                        ),
+                    ],
                 }
             },
         }
