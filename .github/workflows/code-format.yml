@@ -1,6 +1,7 @@
 name: Code Format
 
 on:
+  workflow_call:
   push:
     branches:
       - main
