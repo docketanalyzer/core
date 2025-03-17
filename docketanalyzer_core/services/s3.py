@@ -251,6 +251,14 @@ class S3:
             return False
 
 
-def load_s3():
-    """Load the S3 service."""
-    return S3()
+def load_s3(data_dir: str | Path | None = None) -> S3:
+    """Load the S3 service.
+
+    Args:
+        data_dir (Optional[Union[str, Path]]): Path to local data directory.
+            If None, uses env.DATA_DIR.
+
+    Returns:
+        S3: An instance of the S3 class.
+    """
+    return S3(data_dir)

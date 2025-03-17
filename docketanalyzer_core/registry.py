@@ -1,6 +1,7 @@
 import importlib
 import inspect
 import pkgutil
+from collections.abc import Generator
 from types import ModuleType
 from typing import Any
 
@@ -58,22 +59,6 @@ class Registry:
             raise ValueError(f"'{name}' already exists.")
         self._registry[name] = obj
 
-    def get(self, name: str) -> Any:
-        """Retrieve an object from the registry by its name.
-
-        Args:
-            name (str): The name of the object to retrieve.
-
-        Returns:
-            Any: The object associated with the given name.
-
-        Raises:
-            ValueError: If the name does not exist in the registry.
-        """
-        if name not in self._registry:
-            raise ValueError(f"'{name}' does not exist.")
-        return self._registry[name]
-
     def all(self) -> list[Any]:
         """Return a list of all registered objects.
 
@@ -122,3 +107,68 @@ class Registry:
         """Import the registered classes into the current module's namespace."""
         for cls in self.all():
             setattr(self.module, cls.__name__, cls)
+
+    def dict(self) -> dict[str, Any]:
+        """Return a dictionary of all registered objects.
+
+        Returns:
+            dict: A dictionary with names as keys and registered objects as values.
+        """
+        return self._registry
+
+    def __getattr__(self, name: str) -> Any:
+        """Retrieve an object from the registry by its name.
+
+        Args:
+            name (str): The name of the object to retrieve.
+
+        Returns:
+            Any: The object associated with the given name.
+        """
+        return self._registry[name]
+
+    def __getitem__(self, name: str) -> Any:
+        """Retrieve an object from the registry by its name.
+
+        Args:
+            name (str): The name of the object to retrieve.
+
+        Returns:
+            Any: The object associated with the given name.
+        """
+        return self._registry[name]
+
+    def __contains__(self, name: str) -> bool:
+        """Check if a name exists in the registry.
+
+        Args:
+            name (str): The name to check for existence in the registry.
+
+        Returns:
+            bool: True if the name exists in the registry, False otherwise.
+        """
+        return name in self._registry
+
+    def __iter__(self) -> Generator[Any, None, None]:
+        """Iterate over all registered objects.
+
+        Yields:
+            Any: Each registered object in the registry.
+        """
+        yield from self._registry.values()
+
+    def __len__(self) -> int:
+        """Return the number of registered objects.
+
+        Returns:
+            int: The count of registered objects in the registry.
+        """
+        return len(self._registry)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Registry instance.
+
+        Returns:
+            str: A string representation of the registry's registered objects.
+        """
+        return f"{self.__class__.__name__}({list(self._registry.keys())})"

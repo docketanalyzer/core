@@ -40,7 +40,7 @@ dev = [
 
 [tool.ruff]
 lint.select = ["E", "F", "I", "B", "UP", "N", "SIM", "PD", "NPY", "PTH", "RUF", "D"]
-lint.ignore = ["D100", "D104"]
+lint.ignore = ["D100", "D104", "N801"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["docketanalyzer_core"]
