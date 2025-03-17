@@ -1,35 +1,71 @@
 import os
-import re
 import shutil
 from pathlib import Path
+from typing import Any
 
 import click
+import requests
+import tomli
+import tomli_w
 
-from ... import env
+from ... import EXTENSIONS, env
 
 
-def parse_version(version_str: str) -> tuple[int, ...]:
-    """Parse a version string into a tuple of integers.
-
-    Args:
-        version_str: Version string in format "x.y.z"
-
-    Returns:
-        Tuple of integers representing the version
-    """
-    return tuple(map(int, version_str.split(".")))
+def get_pyproject_shared_config(module_name: str) -> dict[str, Any]:
+    """Get the shared configuration that should be in all DA projects."""
+    extension_modules = [f"docketanalyzer_{ext}" for ext in EXTENSIONS]
+    return {
+        "tool": {
+            "ruff": {
+                "lint": {
+                    "select": [
+                        "E",
+                        "F",
+                        "I",
+                        "B",
+                        "UP",
+                        "N",
+                        "SIM",
+                        "PD",
+                        "NPY",
+                        "PTH",
+                        "RUF",
+                        "D",
+                    ],
+                    "ignore": ["D100", "D104", "N801"],
+                    "isort": {
+                        "known-first-party": ["docketanalyzer", *extension_modules],
+                        "section-order": [
+                            "future",
+                            "standard-library",
+                            "third-party",
+                            "first-party",
+                            "local-folder",
+                        ],
+                    },
+                    "per-file-ignores": {"__init__.py": ["I001", "I002"]},
+                    "pydocstyle": {"convention": "google"},
+                },
+            },
+            "pytest": {
+                "ini_options": {
+                    "log_cli": True,
+                    "log_cli_level": "INFO",
+                    "addopts": f"-ra -q --cov={module_name} -m 'not cost'",
+                    "testpaths": ["tests"],
+                    "pythonpath": ".",
+                    "markers": [
+                        "cost: tests that incur real costs when run",
+                        "local: requires credentials only available locally",
+                    ],
+                }
+            },
+        }
+    }
 
 
 def is_valid_increment(v1: tuple[int, ...], v2: tuple[int, ...]) -> tuple[bool, str]:
-    """Check if v2 is a valid semantic version increment from v1.
-
-    Args:
-        v1: First version as a tuple of integers
-        v2: Second version as a tuple of integers
-
-    Returns:
-        Tuple containing (is_valid, message)
-    """
+    """Check if v2 is a valid semantic version increment from v1."""
     if v1 == v2:
         return True, "Versions are identical"
 
@@ -46,73 +82,62 @@ def is_valid_increment(v1: tuple[int, ...], v2: tuple[int, ...]) -> tuple[bool, 
     return False, "Other issue"
 
 
-def compare_versions(version1: str, version2: str) -> tuple[bool, str]:
-    """Validate version increment.
-
-    Args:
-        version1: First version string
-        version2: Second version string
-
-    Returns:
-        Tuple containing (is_valid, message)
-    """
-    v1 = parse_version(version1)
-    v2 = parse_version(version2)
-
-    result, message = is_valid_increment(v1, v2)
-    return result, message
-
-
-def get_version_from_pyproject(pyproject_path: Path) -> str:
-    """Extract version from pyproject.toml file.
-
-    Args:
-        pyproject_path: Path to pyproject.toml file
-
-    Returns:
-        Version string
-    """
-    import tomli
-
-    content = pyproject_path.read_text(encoding="utf-8")
-    pyproject_data = tomli.loads(content)
-    return pyproject_data["project"]["version"]
-
-
-def update_version_in_pyproject(pyproject_path: Path, new_version: str) -> None:
-    """Update version in pyproject.toml file.
-
-    Args:
-        pyproject_path: Path to pyproject.toml file
-        new_version: New version string to set
-    """
-    content = pyproject_path.read_text()
-    updated_content = re.sub(
-        r'(version\s*=\s*")[^"]+(")', r"\g<1>" + new_version + r"\g<2>", content
-    )
-    pyproject_path.write_text(updated_content)
-
-
 def update_version(version: str) -> str:
-    """Prompt user to update version and validate the input.
-
-    Args:
-        version: Current version string
-
-    Returns:
-        New version string (or unchanged if user didn't provide one)
-    """
+    """Prompt user to update version and validate the input."""
     while 1:
         new_version = input(
             f"Current version is {version}. Enter new version or leave blank to keep: "
         )
         if not new_version:
             new_version = version
-        result, message = compare_versions(version, new_version)
+
+        version = tuple(map(int, version.split(".")))
+        new_version = tuple(map(int, new_version.split(".")))
+        result, message = is_valid_increment(version, new_version)
         if result:
             break
         print("Invalid version change:", message)
-    return new_version
+    return ".".join(map(str, new_version))
+
+
+def update_dependency_version(dependency: str) -> str:
+    """Update the version of a dependency if it is a docketanalyzer package."""
+    if dependency.startswith("docketanalyzer"):
+        package_with_extra = dependency.split(">=")[0]
+        package_name = package_with_extra.split("[")[0]
+        response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
+        latest_version = response.json()["info"]["version"]
+        return f"{package_with_extra}>={latest_version}"
+    return dependency
+
+
+def update_pyproject(package_dir: Path) -> str:
+    """Update the pyproject.toml file with shared config and version info."""
+    pyproject_path = package_dir / "pyproject.toml"
+    config = tomli.loads(pyproject_path.read_text())
+    module_name = config["project"]["name"].replace("-", "_")
+    current_version = config["project"]["version"]
+
+    new_version = update_version(current_version)
+
+    if current_version != new_version:
+        config["project"]["version"] = new_version
+        print(f"Updating version in pyproject.toml to {new_version}")
+
+    shared_config = get_pyproject_shared_config(module_name)
+    config = {**config, **shared_config}
+
+    config["project"]["dependencies"] = [
+        update_dependency_version(dep) for dep in config["project"]["dependencies"]
+    ]
+    for extra in config["project"]["optional-dependencies"]:
+        config["project"]["optional-dependencies"][extra] = [
+            update_dependency_version(dep)
+            for dep in config["project"]["optional-dependencies"][extra]
+        ]
+
+    pyproject_path.write_text(tomli_w.dumps(config))
+    return module_name
 
 
 @click.command()
@@ -132,22 +157,15 @@ def build(push):
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
 
-    pyproject_path = package_dir / "pyproject.toml"
-    if not pyproject_path.exists():
-        raise FileNotFoundError(f"pyproject.toml not found in {package_dir}")
-
-    current_version = get_version_from_pyproject(pyproject_path)
-    new_version = update_version(current_version)
-
-    if current_version != new_version:
-        update_version_in_pyproject(pyproject_path, new_version)
-        print(f"Updated version in pyproject.toml to {new_version}")
+    module_name = update_pyproject(package_dir)
 
     cmd = f"cd {package_dir} && python -m build"
     print(f"Building package with command: {cmd}")
     os.system(cmd)
 
     if push:
+        if "dev" in module_name:
+            raise ValueError("You may not push dev to PyPi.")
         cmd = f"pip install -e {package_dir}"
         print(f"Installing package with command: {cmd}")
         os.system(cmd)

@@ -14,6 +14,13 @@ from dateutil.parser import ParserError
 from pandas.errors import OutOfBoundsDatetime
 from tqdm import tqdm
 
+EXTENSIONS = [
+    "core",
+    "pacer",
+    "ocr",
+    "chat",
+]
+
 
 def parse_docket_id(docket_id: str) -> tuple[str, str]:
     """Parse a docket ID into a court and docket number."""

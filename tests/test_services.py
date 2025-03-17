@@ -82,6 +82,7 @@ def temp_data_dir():
     shutil.rmtree(temp_dir)
 
 
+@pytest.mark.local
 def test_elastic_connection():
     """Test the Elasticsearch service."""
     key_check = bool(env.ELASTIC_URL)
@@ -92,6 +93,7 @@ def test_elastic_connection():
     assert es.ping(), "Elasticsearch could not connect"
 
 
+@pytest.mark.local
 def test_psql_connection():
     """Test the Postgres service."""
     key_check = bool(env.POSTGRES_URL)
@@ -102,6 +104,7 @@ def test_psql_connection():
     assert db.status(), "Postgres could not connect"
 
 
+@pytest.mark.local
 def test_psql_schemaless_table(dummy_data, db_with_test_table):
     """Test the schemaless table functionality."""
     db = db_with_test_table
@@ -143,6 +146,7 @@ def test_psql_schemaless_table(dummy_data, db_with_test_table):
     assert data[0] == "alice@example.com"
 
 
+@pytest.mark.local
 def test_psql_standard_table(dummy_data, table_schema):
     """Test the standard table functionality."""
     test_table = table_schema
@@ -173,6 +177,7 @@ def test_psql_standard_table(dummy_data, table_schema):
     db.close()
 
 
+@pytest.mark.local
 def test_redis_connection():
     """Test the Redis service."""
     key_check = bool(env.REDIS_URL)
