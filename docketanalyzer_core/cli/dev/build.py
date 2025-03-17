@@ -59,22 +59,21 @@ def get_pyproject_shared_config(module_name: str) -> dict[str, Any]:
                         "local: requires credentials only available locally",
                     ],
                     "filterwarnings": [
-                        (
-                            "ignore:builtin type SwigPyPacked has "
-                            "no __module__ attribute:DeprecationWarning"
-                        ),
-                        (
-                            "ignore:builtin type SwigPyObject has "
-                            "no __module__ attribute:DeprecationWarning"
-                        ),
-                        (
-                            "ignore:builtin type swigvarlink has "
-                            "no __module__ attribute:DeprecationWarning"
-                        ),
-                        (
-                            "ignore:distutils Version classes are "
-                            "deprecated:DeprecationWarning"
-                        ),
+                        "ignore:builtin type SwigPyPacked has "
+                        "no __module__ attribute:DeprecationWarning",
+                        "ignore:builtin type SwigPyObject has "
+                        "no __module__ attribute:DeprecationWarning",
+                        "ignore:builtin type swigvarlink has "
+                        "no __module__ attribute:DeprecationWarning",
+                        "ignore:distutils Version classes are "
+                        "deprecated:DeprecationWarning",
+                        "ignore:Support for class-based `config` is deprecated:"
+                        "DeprecationWarning",
+                        "ignore:open_text is deprecated:DeprecationWarning",
+                        "ignore:The `dict` method is deprecated; use `model_dump` "
+                        "instead::",
+                        "ignore:Use 'content=<...>' to upload raw bytes/text content:"
+                        "DeprecationWarning",
                     ],
                 }
             },
