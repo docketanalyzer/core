@@ -71,13 +71,13 @@ def notabs(text: str) -> str:
 
 def download_file(url: str, path: str | Path, description: str = "Downloading"):
     """Download file from URL to local path with progress bar."""
-    path = str(path)
+    path = Path(path)
     response = requests.get(url, stream=True)
     response.raise_for_status()
     total_size = int(response.headers.get("content-length", 0))
 
     with (
-        Path.open(path, "wb") as file,
+        path.open("wb") as file,
         tqdm(
             desc=description,
             total=total_size,

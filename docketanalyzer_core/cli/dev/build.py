@@ -137,6 +137,7 @@ def update_dependency_version(dependency: str) -> str:
         package_name = package_with_extra.split("[")[0]
         response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
         latest_version = response.json()["info"]["version"]
+        print(f"Updating {package_with_extra} to {latest_version}")
         return f"{package_with_extra}>={latest_version}"
     return dependency
 
