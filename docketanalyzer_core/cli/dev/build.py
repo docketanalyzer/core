@@ -14,6 +14,21 @@ def get_pyproject_shared_config(module_name: str) -> dict[str, Any]:
     extension_modules = [f"docketanalyzer_{ext}" for ext in EXTENSIONS]
     return {
         "tool": {
+            "hatch": {
+                "build": {
+                    "targets": {
+                        "wheel": {"packages": [module_name]},
+                        "sdist": {
+                            "exclude": [
+                                "*",
+                                f"!{module_name}/*",
+                                "!pyproject.toml",
+                                "!README.md",
+                            ],
+                        },
+                    },
+                },
+            },
             "ruff": {
                 "lint": {
                     "select": [
