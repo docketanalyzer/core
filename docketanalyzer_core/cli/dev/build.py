@@ -21,7 +21,7 @@ def get_pyproject_shared_config(module_name: str) -> dict[str, Any]:
                         "sdist": {
                             "exclude": [
                                 "*",
-                                f"!{module_name}/*",
+                                f"!{module_name}/**",
                                 "!pyproject.toml",
                                 "!README.md",
                             ],

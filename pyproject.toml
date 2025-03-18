@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docketanalyzer-core"
-version = "0.1.8"
+version = "0.1.9"
 authors = [
     { name = "Nathan Dahlberg" },
 ]
@@ -49,7 +49,7 @@ packages = [
 [tool.hatch.build.targets.sdist]
 exclude = [
     "*",
-    "!docketanalyzer_core/*",
+    "!docketanalyzer_core/**",
     "!pyproject.toml",
     "!README.md",
 ]
