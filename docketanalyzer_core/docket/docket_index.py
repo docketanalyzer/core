@@ -80,7 +80,7 @@ class DocketIndex:
         if not self.cached_ids_path.exists():
             obj_ids = self.table.pandas(self.id_col)
             obj_ids.to_csv(self.cached_ids_path, index=False)
-        obj_ids = pd.read_csv(self.cached_ids_path)[self.table_id_col_name]
+        obj_ids = pd.read_csv(self.cached_ids_path)[self.id_col]
         if shuffle:
             obj_ids = obj_ids.sample(frac=1)
         return obj_ids.tolist()
@@ -96,6 +96,30 @@ class DocketIndex:
         return self.load_cached_ids()
 
     # Additional utilities
+    def add_local_docket_ids(self):
+        """Add local directory docket IDs to the index."""
+        self.dir.mkdir(parents=True, exist_ok=True)
+        docket_ids = pd.DataFrame(
+            {
+                "docket_id": [
+                    x.name
+                    for x in self.dir.iterdir()
+                    if x.is_dir() and not x.name.startswith(".")
+                ]
+            }
+        )
+
+        self.reset_cached_ids()
+        existing_docket_ids = self.cached_ids
+        docket_ids = docket_ids[~docket_ids["docket_id"].isin(existing_docket_ids)]
+
+        if len(docket_ids):
+            batch_size = 100000
+            for i in tqdm(range(0, len(docket_ids), batch_size)):
+                batch = docket_ids.iloc[i : i + batch_size]
+                self.table.add_data(batch, copy=True)
+        self.reset_cached_ids()
+
     def make_batch(self, docket_ids: list[str]) -> DocketBatch:
         """Create a batch of dockets."""
         return DocketBatch(docket_ids, self)

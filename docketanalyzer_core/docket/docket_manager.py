@@ -72,6 +72,22 @@ class DocketManager:
         """Get the local paths to the document OCR JSON files."""
         return list(self.dir.glob("doc.ocr.*.json"))
 
+    def apply_ocr(
+        self, pdf_path: str | Path, overwrite: bool = True, **kwargs
+    ) -> tuple[dict, Path]:
+        """Apply OCR to a PDF document path and save the result."""
+        entry_number, attachment_number = self.parse_document_path(pdf_path)
+        ocr_path = self.get_ocr_path(entry_number, attachment_number)
+
+        if not overwrite and ocr_path.exists():
+            raise FileExistsError(f"OCR file already exists: {ocr_path}")
+
+        from docketanalyzer.ocr import pdf_document
+
+        doc = pdf_document(pdf_path, **kwargs).process()
+        doc.save(ocr_path)
+        return doc.data, ocr_path
+
     # S3
     @property
     def s3_key(self) -> str:
@@ -121,3 +137,7 @@ class DocketManager:
             return getattr(batch, name)
 
         return object.__getattribute__(self, name)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the DocketManager."""
+        return f"<DocketManager({self.docket_id})>"

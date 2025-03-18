@@ -22,6 +22,28 @@ EXTENSIONS = [
 ]
 
 
+class extension_required:
+    """Context manager extension imports."""
+
+    def __init__(self, extension: str):
+        """Initialize context manager."""
+        self.extension = extension
+
+    def __enter__(self):
+        """Enter the context."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Handle import errors with helpful messages."""
+        if exc_type is not None and issubclass(exc_type, ImportError):
+            raise ImportError(
+                f"\n\n{self.extension} extension not installed. "
+                f"Use `pip install docketanalyzer[{self.extension}]` to install."
+            ) from exc_val
+
+        return False
+
+
 def parse_docket_id(docket_id: str) -> tuple[str, str]:
     """Parse a docket ID into a court and docket number."""
     court, docket_number = docket_id.split("__")

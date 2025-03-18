@@ -5,8 +5,6 @@ from typing import Any
 
 import click
 import requests
-import tomli
-import tomli_w
 
 from ... import EXTENSIONS, env
 
@@ -130,6 +128,9 @@ def update_dependency_version(dependency: str) -> str:
 
 def update_pyproject(package_dir: Path) -> str:
     """Update the pyproject.toml file with shared config and version info."""
+    import tomli
+    import tomli_w
+
     pyproject_path = package_dir / "pyproject.toml"
     config = tomli.loads(pyproject_path.read_text())
     module_name = config["project"]["name"].replace("-", "_")
@@ -190,7 +191,7 @@ def build(push):
         cmd = f"twine upload {dist_dir}/*"
         if env.PYPI_TOKEN is not None:
             cmd += f" -u __token__ -p {env.PYPI_TOKEN}"
-        print(f"Uploading to PyPI with command: {cmd}")
+        print("Uploading to PyPI ...")
         os.system(cmd)
 
         shutil.rmtree(dist_dir)
