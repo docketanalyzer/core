@@ -38,7 +38,7 @@ class extension_required:
         if exc_type is not None and issubclass(exc_type, ImportError):
             raise ImportError(
                 f"\n\n{self.extension} extension not installed. "
-                f"Use `pip install docketanalyzer[{self.extension}]` to install."
+                f"Use `pip install 'docketanalyzer[{self.extension}]'` to install."
             ) from exc_val
 
         return False
